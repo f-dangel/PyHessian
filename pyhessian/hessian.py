@@ -154,18 +154,19 @@ class hessian:
 
         return eigenvalues, eigenvectors
 
-    def trace(self, maxIter=100, tol=1e-3):
+    def trace(self, maxIter=100, tol=1e-3, metric=None):
         """
         compute the trace of hessian using Hutchinson's method
         maxIter: maximum iterations used to compute trace
         tol: the relative tolerance
+        metric: Diagonal of the metric tensor.
         """
 
         device = self.device
         trace_vhv = []
         trace = 0.0
 
-        for i in range(maxIter):
+        for _ in range(maxIter):
             self.model.zero_grad()
             v = [torch.randint_like(p, high=2, device=device) for p in self.params]
             # generate Rademacher random variables
@@ -176,6 +177,10 @@ class hessian:
                 _, Hv = self.dataloader_hv_product(v)
             else:
                 Hv = hessian_vector_product(self.gradsH, self.params, v)
+
+            if metric is not None:
+                Hv = Hv / metric
+
             trace_vhv.append(group_product(Hv, v).cpu().item())
             if abs(np.mean(trace_vhv) - trace) / (abs(trace) + 1e-6) < tol:
                 return trace_vhv
