@@ -179,7 +179,7 @@ class hessian:
                 Hv = hessian_vector_product(self.gradsH, self.params, v)
 
             if metric is not None:
-                Hv = Hv / metric
+                Hv = [hv / m for hv, m in zip(Hv, metric)]
 
             trace_vhv.append(group_product(Hv, v).cpu().item())
             if abs(np.mean(trace_vhv) - trace) / (abs(trace) + 1e-6) < tol:
