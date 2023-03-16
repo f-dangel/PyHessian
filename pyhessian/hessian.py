@@ -154,12 +154,13 @@ class hessian:
 
         return eigenvalues, eigenvectors
 
-    def trace(self, maxIter=100, tol=1e-3, metric=None):
+    def trace(self, maxIter=100, tol=1e-3, metric=None, jac=None):
         """
         compute the trace of hessian using Hutchinson's method
         maxIter: maximum iterations used to compute trace
         tol: the relative tolerance
-        metric: Diagonal of the metric tensor.
+        metric: Diagonal of the metric tensor in list format.
+        jac: Diagonal of the reparameterization Jacobian in list format.
         """
 
         device = self.device
@@ -178,8 +179,14 @@ class hessian:
             else:
                 Hv = hessian_vector_product(self.gradsH, self.params, v)
 
+            if jac is not None and metric is not None:
+                raise NotImplementedError
             if metric is not None:
+                assert len(Hv) == len(metric)
                 Hv = [hv / m for hv, m in zip(Hv, metric)]
+            if jac is not None:
+                assert len(Hv) == len(jac)
+                Hv = [hv / j**2 for hv, j in zip(Hv, jac)]
 
             trace_vhv.append(group_product(Hv, v).cpu().item())
             if abs(np.mean(trace_vhv) - trace) / (abs(trace) + 1e-6) < tol:
